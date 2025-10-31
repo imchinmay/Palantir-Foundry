@@ -4,6 +4,7 @@
 
 [![Built with Palantir Foundry](https://img.shields.io/badge/built%20with-Palantir%20Foundry-001a72)](#)
 
+![Build with Palantir](https://github.com/palantir/aip-community-registry/blob/develop/_static/github_banner.png)
 ---
 
 ## Overview
