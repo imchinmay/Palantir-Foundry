@@ -58,3 +58,75 @@ Key Layers:
 | **5. Ontology Modeling**        | Central object `PurchaseOrderLine` linked to `MetricsTable`, `EventLog`, `Shipment`, `Receipt`, and `Allocation`. Configure **filter propagation** from PO Line to linked datasets.                                                    |
 | **6. AIP Logic Function**       | A reasoning agent that consumes a `po_line_id`, fetches context via the ontology, and returns a structured recommendation (`recommended_action`, `rationale_md`, `confidence`, `expected_impact_value`).                               |
 | **7. Workshop App**             | One-page control tower: KPI cards, process map, PO table, and an AIP panel. Row click sets `selectedPOLineID` → passed to AIP Logic → recommendation displays inline.                                                                  |
+
+
+---
+
+## Example Process Flow
+
+- Plan → Buy → Execute → Decide
+- ForecastLine → PurchaseOrderLine → Shipment (ExFactory) → Receipt (ReceivedDC) → Allocation (Allocated) → AIP Logic Recommendation
+- ExFactory (from Shipment; ASN-backed entries considered more reliable)
+- ReceivedHub (optional; from Shipment; non-authoritative)
+- ReceivedDC (authoritative; from Receipt, overrides Shipment DC timestamps)
+- Allocated (authoritative; from Allocation)
+
+Precedence + dedupe ensure one authoritative event per type/day so KPIs and process mining remain stable and explainable.
+
+---
+
+## AIP Logic Design
+
+- Input: po_line_id (string)
+- The goal is to reduce delay risk and protect margin
+- Context pulled via ontology: Metrics (lead/cycle time, risk, VaR), last N Events with timestamps, Shipment (mode, ETA, cost), Receipt (qty/date), Allocation (site/channel/date)
+- Decision set:
+    - EXPEDITE
+    - SPLIT_SHIPMENT
+    - PUSH_PROMISE_DATE
+    - REALLOCATE_FROM_STORE
+    - ESCALATE_TO_VENDOR
+    - NO_ACTION
+- Output (strict JSON keys): recommended_action, rationale_md, confidence, expected_impact_value
+
+Sample Output
+```
+{
+  "recommended_action": "ESCALATE_TO_VENDOR",
+  "rationale_md": "Short-received vs order; DC receipt confirmed; allocation blocked. Escalation protects availability and margin.",
+  "confidence": 0.92,
+  "expected_impact_value": 12500
+}
+```
+---
+
+## Impact
+
+| Problem Before                        | What This Delivers                                                         |
+| ------------------------------------- | -------------------------------------------------------------------------- |
+| Fragmented spreadsheets & systems     | Unified ontology linking plan, buy, and execution domains                  |
+| Conflicting timestamps across sources | Precedence + dedupe rules consolidated in a single Event Log               |
+| No trustworthy lead/cycle times       | SQL-engineered Metrics Object with standardized KPI logic                  |
+| Reactive firefighting                 | AIP Logic recommends proactive, explainable actions with confidence scores |
+| Low data trust                        | Transparent lineage, consistent filters, and ontology-aware visuals        |
+
+
+---
+
+## Next Steps
+
+- Ontology Actions / Write-back: apply recommendations (update promise date, create supplier task) directly from the app and log to an audit dataset.
+- Batch Reasoning: score/prioritize hundreds of PO lines under budget or service constraints (e.g., maximize service for a given expedite cap).
+- Proactive Alerts: notify planners when value_at_risk or delay probability breaches thresholds.
+- Extend the Model: include inventory positions and allocation plans to close the loop from plan → execution → re-plan.
+
+---
+
+## Key Takeaways
+
+- Unified planning, procurement, and execution in a single, filter-aware ontology.
+- Engineered a reusable Metrics Object via SQL for precise, explainable KPIs.
+- Built a Workshop control tower that embeds AIP Logic for prescriptive decisions in-context.
+- Designed for planners and sourcing managers to act faster with confidence, moving from visibility to decision to action in one workspace.
+
+---
