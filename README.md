@@ -37,7 +37,6 @@ This workflow re-imagines that process in Foundry:
 
 ## Architecture Overview
 
-
 ```mermaid
 flowchart LR
   A["Source Systems (Planning, ERP, WMS, TMS, ASN, Carrier)"] --> B["Foundry Ingest"]
@@ -80,15 +79,26 @@ Precedence + dedupe ensure one authoritative event per type/day so KPIs and proc
 
 - Input: po_line_id (string)
 - The goal is to reduce delay risk and protect margin
+- System Prompt
+```
+You are the Control Tower Agent for Burberry’s Purchase-Order-to-Fulfillment process.
+Your goal is to minimize late deliveries and protect margin.
+
+Given one PO line’s metrics and latest events:
+1. Decide the best next operational action:
+   - EXPEDITE
+   - SPLIT_SHIPMENT
+   - PUSH_PROMISE_DATE
+   - REALLOCATE_FROM_STORE
+   - ESCALATE_TO_VENDOR
+   - NO_ACTION
+2. Explain the reasoning briefly in markdown.
+3. Quantify expected impact when possible.
+
+Always return valid JSON with keys:
+recommended_action, rationale_md, confidence, expected_impact_value.
+```
 - Context pulled via ontology: Metrics (lead/cycle time, risk, VaR), last N Events with timestamps, Shipment (mode, ETA, cost), Receipt (qty/date), Allocation (site/channel/date)
-- Decision set:
-    - EXPEDITE
-    - SPLIT_SHIPMENT
-    - PUSH_PROMISE_DATE
-    - REALLOCATE_FROM_STORE
-    - ESCALATE_TO_VENDOR
-    - NO_ACTION
-- Output (strict JSON keys): recommended_action, rationale_md, confidence, expected_impact_value
 
 Sample Output
 ```
